@@ -1,0 +1,33 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/cope-data-collection", "destination": "/what-we-collect.html", "permanent": true },
+    { "source": "/thermal-imaging", "destination": "/what-we-collect.html", "permanent": true },
+    { "source": "/news", "destination": "/results.html", "permanent": true },
+    { "source": "/clients", "destination": "/results.html", "permanent": true },
+    { "source": "/2d-orthomosaics", "destination": "/", "permanent": true },
+    { "source": "/3d-modeling", "destination": "/", "permanent": true },
+    { "source": "/Sample.html", "destination": "/deliverables.html", "permanent": true },
+    { "source": "/sample.html", "destination": "/deliverables.html", "permanent": true },
+    { "source": "/ROI.html", "destination": "/results.html", "permanent": true },
+    { "source": "/roi.html", "destination": "/results.html", "permanent": true },
+    { "source": "/QSR-Case-Study.html", "destination": "/results.html", "permanent": true },
+    { "source": "/qsr-case-study.html", "destination": "/results.html", "permanent": true }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)\\.(png|jpg|jpeg|webp|svg|woff2|woff|ttf|otf|pdf)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(html|xml|txt)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
+  ]
+}

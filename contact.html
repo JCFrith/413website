@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact | 413 Solution</title>
+  <meta name="description" content="Tell us about your portfolio and what you need. We'll scope a pilot or full engagement to your timeline. 615-686-3707.">
+  <link rel="canonical" href="https://413solution.com/contact.html">
+  <meta property="og:title" content="Contact | 413 Solution">
+  <meta property="og:description" content="Tell us about your portfolio and what you need. We'll scope a pilot or full engagement to your timeline. 615-686-3707.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://413solution.com/contact.html">
+  <meta property="og:image" content="https://413solution.com/image/Horizontal-Logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/site.css">
+  <script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<div class="scroll-progress" aria-hidden="true"></div>
+<nav class="site-nav">
+  <div class="container">
+    <a class="logo" href="index.html" aria-label="413 Solution home">
+      <img src="image/Horizontal-Logo.png" alt="413 Solution" width="200" height="46">
+    </a>
+    <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links">
+      <a href="standard.html">The Standard</a>
+      <a href="portfolio-lifecycle.html">Lifecycle</a>
+      <a href="what-we-collect.html">What We Collect</a>
+      <a href="how-we-deliver.html">How We Deliver</a>
+      <a href="deliverables.html">Deliverables</a>
+      <a href="who-its-for.html">Who It's For</a>
+      <a href="results.html">Results</a>
+      <a href="about.html">About</a>
+      <a class="nav-cta" href="contact.html">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="reg-marks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="container">
+    <div class="hero-inner">
+      <div class="eyebrow reveal on-dark">Contact</div>
+      <h1 class="reveal" style="--d:80ms">Scope a Pilot or Portfolio Program</h1>
+      <p class="lede reveal" style="--d:160ms">Tell us about your portfolio and what you need. We'll scope a pilot or full engagement to your timeline.</p>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="container">
+    <div class="grid-2" style="gap: 4rem; align-items: start;">
+      <div class="reveal">
+        <div class="eyebrow">Get in Touch</div>
+        <h2>We Work at Portfolio Scale</h2>
+        <p>We work with risk leaders, brokers, enterprise operators, and carriers managing large location portfolios across North America.</p>
+        <div class="card tick" style="margin: 1.8rem 0;">
+          <ul class="check-list plain" style="font-size: 1rem;">
+            <li><strong>Phone:</strong>&nbsp;<a href="tel:6156863707" style="color: var(--blue); text-decoration: none; font-weight: 700;">615-686-3707</a></li>
+            <li><strong>Email:</strong>&nbsp;<a href="mailto:info@413solution.com" style="color: var(--blue); text-decoration: none; font-weight: 700;">info@413solution.com</a></li>
+            <li><strong>LinkedIn:</strong>&nbsp;<a href="https://www.linkedin.com/company/413solution" target="_blank" rel="noreferrer" style="color: var(--blue); text-decoration: none; font-weight: 700;">413 Solution</a></li>
+          </ul>
+        </div>
+        <p style="font-size: 0.98rem;">Typical pilot engagements cover 100 to 500 locations and complete in 1 to 3 months. We scope to your portfolio size, data requirements, and decision timeline.</p>
+        <p style="margin-top: 0.9rem;">Best fit: portfolios with 100+ locations, renewal deadlines, underwriting requirements, or internal data standardization needs.</p>
+      </div>
+      <div class="reveal" style="--d:120ms">
+        <div class="card" style="padding: 2.4rem;">
+          <form id="contact-form">
+            <div class="form-group">
+              <label for="name">Full Name</label>
+              <input type="text" id="name" name="name" required autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label for="company">Company / Portfolio Name</label>
+              <input type="text" id="company" name="company" required autocomplete="organization">
+            </div>
+            <div class="form-group">
+              <label for="email">Work Email</label>
+              <input type="email" id="email" name="email" required autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="need">Primary Need</label>
+              <select id="need" name="need">
+                <option value="">Select one</option>
+                <option>Property renewal support</option>
+                <option>SOV enrichment</option>
+                <option>COPE verification</option>
+                <option>NatCat exposure documentation</option>
+                <option>Asset condition benchmarking</option>
+                <option>Custom attribute survey</option>
+                <option>Not sure yet</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="locations">Number of Locations</label>
+              <input type="text" id="locations" name="locations" placeholder="e.g., 300">
+            </div>
+            <div class="form-group">
+              <label for="timeline">Decision Timeline / Renewal Date</label>
+              <input type="text" id="timeline" name="timeline" placeholder="e.g., renewal submission due October 2026">
+            </div>
+            <div class="form-group">
+              <label for="message">What are you looking for?</label>
+              <textarea id="message" name="message" required placeholder="e.g., COPE data for an upcoming property renewal across 300 locations, custom attribute pilot for 100 sites, portfolio baseline for acquisition due diligence"></textarea>
+            </div>
+            <button type="submit" id="submit-btn" class="btn-submit">Send Request</button>
+          </form>
+          <div id="form-status" class="form-status" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<footer>
+  <div class="container">
+    <div class="footer-wrap">
+      <div class="footer-brand">
+        <img src="image/Logo_White.png" alt="413 Solution">
+        <p>Standardized, decision-grade field intelligence at national scale.</p>
+        <div class="badge">
+          <img src="image/sdvosb-badge.png" alt="SDVOSB Certified">
+          <span>SBA-Certified SDVOSB</span>
+        </div>
+      </div>
+      <div class="footer-nav">
+        <h4>Explore</h4>
+        <a href="standard.html">The Standard</a>
+        <a href="portfolio-lifecycle.html">Portfolio Lifecycle</a>
+        <a href="what-we-collect.html">What We Collect</a>
+        <a href="how-we-deliver.html">How We Deliver</a>
+        <a href="deliverables.html">Deliverables</a>
+        <a href="who-its-for.html">Who It's For</a>
+        <a href="results.html">Results</a>
+        <a href="about.html">About</a>
+      </div>
+      <div class="footer-contact">
+        <h4>Contact</h4>
+        <a href="tel:6156863707">615-686-3707</a>
+        <a href="mailto:info@413solution.com">info@413solution.com</a>
+        <a href="https://www.linkedin.com/company/413solution" target="_blank" rel="noreferrer">LinkedIn</a>
+        <a href="contact.html">Scope a Pilot</a>
+      </div>
+    </div>
+    <div class="footer-legal">
+      <span>&copy; 2026 413 Solution LLC &middot; Murfreesboro, TN</span>
+      <span>Raw field data only. No black-box scoring. No generic recommendations.</span>
+    </div>
+  </div>
+</footer>
+<script src="js/site.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var form = document.getElementById('contact-form');
+  var statusEl = document.getElementById('form-status');
+  var submitBtn = document.getElementById('submit-btn');
+  if (!form || !statusEl || !submitBtn) return;
+  var PUBLIC_KEY = "FABAm7V8o4KsMl4cS";
+  var SERVICE_ID = "service_i7q0hrd";
+  var TEMPLATE_ID = "template_s8iwbne";
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (typeof emailjs === 'undefined') {
+      statusEl.innerHTML = '<p class="form-error">Form service failed to load. Please email us directly at <a href="mailto:info@413solution.com">info@413solution.com</a> or call <a href="tel:6156863707">615-686-3707</a>.</p>';
+      return;
+    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending...";
+    statusEl.textContent = "";
+    try {
+      emailjs.init({ publicKey: PUBLIC_KEY });
+      await emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, form);
+      form.style.display = 'none';
+      statusEl.innerHTML = '<div class="form-success">' +
+        '<div class="mark">&#10003;</div>' +
+        '<h3>Message Received</h3>' +
+        '<p style="margin-bottom:0;">We\'ll be in touch within one business day.<br>You can also reach us directly at <a href="tel:6156863707">615-686-3707</a>.</p>' +
+        '</div>';
+    } catch (err) {
+      console.error("EmailJS Error:", err);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Send Request";
+      statusEl.innerHTML = '<p class="form-error">Something went wrong. Please email us directly at <a href="mailto:info@413solution.com">info@413solution.com</a> or call <a href="tel:6156863707">615-686-3707</a>.</p>';
+    }
+  });
+});
+</script>
+</body>
+</html>
