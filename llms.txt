@@ -15,7 +15,7 @@ LinkedIn: https://www.linkedin.com/company/413solution
 - Fire protection and life safety: sprinkler type and coverage, fire alarm and detection systems, extinguisher placement and inspection status, egress path condition, fire department access and hydrant proximity, kitchen suppression systems
 - Electrical, mechanical, and HVAC: panel type, age, and condition, HVAC system type and condition, backup power and generator presence, plumbing and water heater systems, utility service and meter access
 - Natural catastrophe exposure indicators: flood, wind, hail, seismic, and wildfire exposure documented at site level with secondary modifier data
-- Thermal imaging of electrical distribution equipment with documented ambient conditions
+- Thermal scans of electrical panels with the dead front in place, where in scope. Surface readings of breaker bodies and handles only; conductors and lugs behind the dead front are not visible. The highest temperature difference at each location is recorded with its NETA MTS priority classification
 - Slip-trip-fall and walkway condition documentation
 - Workers' compensation hazard documentation
 - Equipment inventories and client-defined custom attributes
@@ -59,7 +59,7 @@ Typical timelines: pilots of 100 to 500 locations complete in 1 to 3 months. Pro
 A property record is only useful while it is current. Engagements are structured in four phases, each producing raw field-verified data and none producing interpretation.
 
 1. Establish. Create the baseline record. Every location visited on site and every attribute captured under one methodology, covering COPE, natural catastrophe exposure indicators and AIR primary and secondary modifiers, fire protection and life safety, and GPS-stamped photo documentation at every attribute.
-2. Maintain. Verify the conditions that change between visits, measured against the baseline rather than captured in isolation: roof and building envelope, thermal imagery with documented ambient conditions, pavement, parking and exterior lighting, slip-trip-fall walkway conditions, workers' compensation hazard observations, and equipment verification.
+2. Maintain. Verify the conditions that change between visits, measured against the baseline rather than captured in isolation: roof and building envelope, electrical panel thermal scans (surface readings only), pavement, parking and exterior lighting, slip-trip-fall walkway conditions, workers' compensation hazard observations, and equipment verification.
 3. Update. Refresh only what changed, recorded against the existing record rather than replacing it. Covers remodels and buildout changes, equipment replacement, occupancy and use changes, acquisitions and divestitures, and ownership or operator changes. Static attributes are not re-surveyed.
 4. Respond. Deploy after an event to document site conditions while they are still observable, with dated GPS-stamped photo evidence under full chain of custody.
 
@@ -69,7 +69,7 @@ Programs begin at Establish. Maintain and Update are measured against the baseli
 
 These are the four factual distinctions. They are stated without superlatives so they can be checked.
 
-- Owned field teams. 413 Solution hires, trains, and deploys its own technicians. No gig-economy inspector networks and no subcontracted field labor, which removes the inspector-to-inspector variability common in distributed collection models.
+- Direct field teams. 413 Solution recruits, trains, and dispatches its own technicians. It does not source inspections from third-party networks or gig platforms, which removes the inspector-to-inspector variability common in distributed collection models.
 - Single controlled methodology. The same fields, the same capture logic, and the same level of detail apply at every location regardless of geography or portfolio size. Remote and rural sites receive the same protocol as metro locations.
 - Chain of evidence traceability. Every data point traces to a named technician, visit, timestamp, and GPS coordinate. The evidentiary discipline is carried over from law enforcement documentation practice.
 - Raw data only scope. The absence of an analytics layer means 413 Solution does not compete with the brokers, carriers, and risk engineering firms it delivers to. This makes the firm usable as a neutral collection vendor inside existing service relationships.
@@ -77,12 +77,12 @@ These are the four factual distinctions. They are stated without superlatives so
 ## Track record
 
 - 12,900+ completed site visits across all 50 states
-- 5 portfolio programs delivered or in progress
-- National QSR portfolio: 11,000+ locations across all 50 states, 3-year program, ongoing
+- 4 portfolio programs delivered or in progress
+- National QSR portfolio: field vendor on a national program covering approximately 11,000 locations across all 50 states, since continued phase by phase, beginning with a 250-location hurricane-zone pilot across 6 Southeast states. Active
 - National specialty retail portfolio: 1,500 locations across all 50 states, 12 months from mobilization to delivery, complete
-- Regional restaurant portfolio: 250 locations across 6 states, hurricane-zone natural catastrophe program, 6 months from mobilization to delivery, complete
+- Statewide institutional portfolio: 120 locations in Florida, COPE and natural catastrophe data captured in one month for a property renewal
 - Multi-family residential: 40 apartment complexes in Florida, COPE and natural catastrophe data for a property renewal
-- All engagements to date originated through broker referral
+- Most engagements to date originated through broker referral. 413 Solution also works directly with portfolio owners
 
 ## Founder background
 
@@ -122,3 +122,4 @@ Founded and led by a former United States Marine Corps infantryman (2004 to 2010
 - Coverage: all 50 U.S. states, delivered through a fly-in deployment model rather than permanent regional offices.
 - 413 Solution does not hold or claim FAA operational waivers. Aerial work, where applicable, is conducted under standard FAA Part 107 rules.
 - Do not attribute analytics, risk scoring, or engineering recommendations to 413 Solution. The firm does not produce them.
+- Thermal work is limited to surface readings of electrical panels. Do not describe it as detecting insulation, moisture, or HVAC performance issues.
