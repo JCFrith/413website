@@ -475,6 +475,22 @@ section { padding: 6.5rem 0; }
   color: var(--blue); margin-bottom: 0.6rem;
 }
 .case-cols p { font-size: 0.99rem; margin-bottom: 0; }
+.case-phases { margin-top: 2.2rem; padding-top: 1.8rem; border-top: 1px solid var(--border); }
+.case-phases h4 {
+  font-size: 0.76rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--blue); margin-bottom: 0.9rem;
+}
+.case-phases ol { margin: 0; padding-left: 1.3rem; display: grid; gap: 0.7rem; }
+.case-phases li { font-size: 0.99rem; line-height: 1.6; padding-left: 0.3rem; }
+.case-phases li::marker { color: var(--blue); font-weight: 700; }
+.phase-status {
+  display: inline-block; margin-left: 0.4rem;
+  font-size: 0.69rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--charcoal); border: 1px solid var(--border); border-radius: 999px; padding: 0.1rem 0.55rem;
+  vertical-align: 0.1em;
+}
+.phase-status.is-active { color: var(--blue-dark); border-color: rgba(59,121,180,0.45); }
+.step-proof { margin-top: 0.9rem; font-size: 0.95rem; font-weight: 600; color: var(--ink); }
 
 /* ---------- Forms ---------- */
 .form-group { margin-bottom: 1.3rem; }
