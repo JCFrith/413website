@@ -2,6 +2,9 @@
 (function () {
   "use strict";
 
+  /* Tells the inline head script that this file loaded, so it keeps the reveal styles on. */
+  window.__site413 = true;
+
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
 
@@ -9,17 +12,23 @@
   var toggle = document.querySelector(".menu-toggle");
   var links = document.querySelector(".nav-links");
   if (toggle && links) {
-    toggle.addEventListener("click", function () {
-      var open = links.classList.toggle("open");
+    var setMenu = function (open) {
+      links.classList.toggle("open", open);
       toggle.classList.toggle("open", open);
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    toggle.addEventListener("click", function () {
+      setMenu(!links.classList.contains("open"));
     });
     each(links.querySelectorAll("a"), function (a) {
-      a.addEventListener("click", function () {
-        links.classList.remove("open");
-        toggle.classList.remove("open");
-        toggle.setAttribute("aria-expanded", "false");
-      });
+      a.addEventListener("click", function () { setMenu(false); });
+    });
+    /* Escape closes the menu and hands focus back to the button that opened it */
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && links.classList.contains("open")) {
+        setMenu(false);
+        toggle.focus();
+      }
     });
   }
 
@@ -34,7 +43,7 @@
     if (nav) nav.classList.toggle("scrolled", y > 24);
     if (progress) {
       var h = document.documentElement.scrollHeight - window.innerHeight;
-      progress.style.width = h > 0 ? (y / h) * 100 + "%" : "0%";
+      progress.style.transform = "scaleX(" + (h > 0 ? Math.min(y / h, 1) : 0) + ")";
     }
     if (reticle && !reduceMotion) {
       reticle.style.transform = "translateY(calc(-50% + " + y * 0.12 + "px))";
@@ -66,24 +75,32 @@
   function animateCount(el) {
     var target = parseFloat(el.getAttribute("data-count"));
     var suffix = el.getAttribute("data-suffix") || "";
-    var duration = 1400;
+    var duration = 1100;
     var start = null;
     function fmt(n) { return Math.round(n).toLocaleString("en-US"); }
+    /* The element keeps its real text the whole time. The moving number is painted
+       over it from data-display, so a crawler or screen reader that reads the page
+       mid-animation gets the true figure, never "0". */
+    el.setAttribute("data-display", "0");
+    el.classList.add("counting");
     function frame(ts) {
       if (!start) start = ts;
       var p = Math.min((ts - start) / duration, 1);
       var eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = fmt(target * eased) + (p === 1 ? suffix : "");
-      if (p < 1) window.requestAnimationFrame(frame);
+      if (p < 1) {
+        el.setAttribute("data-display", fmt(target * eased));
+        window.requestAnimationFrame(frame);
+      } else {
+        el.classList.remove("counting");
+        el.removeAttribute("data-display");
+      }
     }
     window.requestAnimationFrame(frame);
   }
   var counters = document.querySelectorAll("[data-count]");
   if (counters.length) {
     if (reduceMotion || !("IntersectionObserver" in window)) {
-      each(counters, function (el) {
-        el.textContent = parseFloat(el.getAttribute("data-count")).toLocaleString("en-US") + (el.getAttribute("data-suffix") || "");
-      });
+      /* Static markup already holds the final figures. Nothing to do. */
     } else {
       var cio = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {

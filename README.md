@@ -25,13 +25,15 @@ vercel.json     legacy URL redirects and cache headers
 sitemap.xml     must be updated when a page is added or removed
 robots.txt
 llms.txt        summary for AI crawlers
-og-image.png    social preview card
+og-image.png    social preview card, referenced by every page's og:image
+favicon.ico, favicon-32.png, apple-touch-icon.png   browser and home-screen icons
 ```
 
 ## Conventions
 
 - URLs keep their `.html` extension. `cleanUrls` is off in `vercel.json` on purpose, because the sitemap and existing inbound links use the extension.
 - Legacy URLs from the previous site are redirected in `vercel.json`, not in a `_redirects` file. The Cloudflare-format `_redirects` file the old host carried was never read by Apache and did nothing.
+- Photographs and maps in `image/` are WebP. Give every `<img>` its real `width` and `height` so the page does not shift as it loads.
 - `image/` holds only files a page actually links to. Unreferenced assets are deleted rather than left in place.
 - The contact form posts through EmailJS from the browser. The key in `contact.html` is a publishable key and is public by design.
 
