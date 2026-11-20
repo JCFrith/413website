@@ -323,7 +323,7 @@ function init(root) {
     scene.add(im);
   }
 
-  // signage: wordmark over the storefront, mark on the drive-through side
+  // signage: wordmark over the storefront
   {
     const loader = new THREE.TextureLoader(), white = lam(0xf4f6f8);
     const art = (url, w, h) => {
@@ -337,10 +337,6 @@ function init(root) {
     };
     box(5.0, 1.15, 0.08, 2.05, 3.78, 11.04, white, { name: 'sign', collide: false });
     art('image/Horizontal-Logo.png', 4.5, 4.5 * 118 / 727).position.set(2.05, 3.78, 11.086);
-    box(0.08, 2.0, 2.0, 6.04, 3.3, 0.8, white, { name: 'sign', collide: false });
-    const mark = art('image/walkthrough-mark.png', 1.6, 1.6);
-    mark.position.set(6.086, 3.3, 0.8);
-    mark.rotation.y = Math.PI / 2;
   }
 
   // slab, with a cutaway at the west wall to show the foundation connection
