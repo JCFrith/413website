@@ -16,6 +16,9 @@ function init(root) {
   const hudLabels = root.querySelector('[data-walk-labels]');
   const hudBar = root.querySelector('[data-walk-bar]');
   const fallback = root.querySelector('.walk-fallback');
+  const btnPrev = root.querySelector('[data-walk-prev]');
+  const btnNext = root.querySelector('[data-walk-next]');
+  const live = root.querySelector('[data-walk-live]');
 
   let renderer;
   try {
@@ -275,14 +278,14 @@ function init(root) {
   rtus.name = 'rooftop equipment';
 
   // electrical panel on the west wall, back of house
-  const PANEL = { y: 1.5, z: -3.77, w: 0.42, h: 1.125 };
+  const PANEL = { y: 1.5, z: -3.77, w: 0.42, h: 1.125, rows: 20, row0: 1.95, pitch: 0.0474, colZ: 0.062, bw: 0.1, bh: 0.036 };
   box(0.1, PANEL.h, PANEL.w, -5.65, PANEL.y, PANEL.z, M.panel, { name: 'panel enclosure' });
   box(0.006, PANEL.h - 0.1, PANEL.w - 0.08, -5.597, PANEL.y, PANEL.z, lam(0x8792a0), { name: 'dead front', collide: false });
   {
-    const rows = 20, im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.014, 0.036, 0.1), M.breaker, rows * 2);
+    const rows = PANEL.rows, im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.014, PANEL.bh, PANEL.bw), M.breaker, rows * 2);
     const m4 = new THREE.Matrix4();
     for (let r = 0; r < rows; r++) for (let c = 0; c < 2; c++) {
-      m4.makeTranslation(-5.588, PANEL.y + 0.45 - r * 0.0474, PANEL.z + (c === 0 ? 0.062 : -0.062));
+      m4.makeTranslation(-5.588, PANEL.row0 - r * PANEL.pitch, PANEL.z + (c === 0 ? PANEL.colZ : -PANEL.colZ));
       im.setMatrixAt(r * 2 + c, m4);
     }
     scene.add(im);
@@ -292,11 +295,113 @@ function init(root) {
   scene.add(panelDoor);
   box(0.012, PANEL.h, PANEL.w, 0, 0, -PANEL.w / 2, M.panel, { parent: panelDoor, name: 'panel door', collide: false });
 
-  // the real field scan, crossfaded over the modelled panel
-  const THERMAL = { x: -5.5, y: 1.5, z: -3.75, w: 1.0, h: 1.3333 };
-  const HOT = new V3(THERMAL.x, THERMAL.y + (0.558 - 0.5) * THERMAL.h, THERMAL.z - (0.62 - 0.5) * THERMAL.w);
-  const thermalTex = new THREE.TextureLoader().load('image/walkthrough-thermal.webp', () => { needsRender = true; });
+  // Thermal view: a render of the modelled panel, drawn to match it breaker for breaker.
+  // Illustrative only. Temperatures are surface readings of breaker bodies with the dead front in place.
+  const THERMAL = { x: -5.5, y: PANEL.y, z: PANEL.z, w: 4.0, h: 2.8 };
+  const HOT_ROW = 7;
+  const HOT = new V3(THERMAL.x, PANEL.row0 - HOT_ROW * PANEL.pitch, PANEL.z - PANEL.colZ);
+
+  function drawThermal() {
+    const cw = 2400, ch = 1680, cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    const g = cv.getContext('2d');
+    const S = cw / THERMAL.w;                                         // pixels per metre
+    const X = (z) => ((THERMAL.z + THERMAL.w / 2) - z) * S;           // the camera's right is -z
+    const Y = (y) => ((THERMAL.y + THERMAL.h / 2) - y) * S;
+    const T0 = 68, T1 = 135;
+    const PAL = [[0, [8, 3, 28]], [0.18, [48, 10, 104]], [0.38, [128, 22, 140]], [0.58, [214, 62, 52]],
+      [0.78, [248, 160, 28]], [0.93, [255, 240, 150]], [1, [255, 255, 255]]];
+    const rgb = (temp) => {
+      const t = clamp01((temp - T0) / (T1 - T0));
+      let i = 0;
+      while (i < PAL.length - 2 && t > PAL[i + 1][0]) i++;
+      const [ta, ca] = PAL[i], [tb, cb] = PAL[i + 1], k = clamp01((t - ta) / (tb - ta));
+      return ca.map((v, j) => Math.round(v + (cb[j] - v) * k));
+    };
+    const col = (temp, alpha = 1) => { const c = rgb(temp); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + alpha + ')'; };
+    const rect = (zc, yc, w, h, temp, blur = 0) => {
+      g.fillStyle = g.shadowColor = col(temp);
+      g.shadowBlur = blur;
+      g.fillRect(X(zc + w / 2), Y(yc + h / 2), w * S, h * S);
+      g.shadowBlur = 0;
+    };
+
+    // wall: cool masonry, slightly warmer around the panel
+    g.fillStyle = col(70); g.fillRect(0, 0, cw, ch);
+    let rg = g.createRadialGradient(X(PANEL.z), Y(PANEL.y), 0.2 * S, X(PANEL.z), Y(PANEL.y), 1.5 * S);
+    rg.addColorStop(0, col(76)); rg.addColorStop(1, col(70, 0));
+    g.fillStyle = rg; g.fillRect(0, 0, cw, ch);
+    g.strokeStyle = col(68, 0.5); g.lineWidth = 2;                    // block coursing, a touch cooler at the joints
+    for (let y = 0; y <= 3.0; y += 0.2) { g.beginPath(); g.moveTo(0, Y(y)); g.lineTo(cw, Y(y)); g.stroke(); }
+    for (let y = 0, r = 0; y < 3.0; y += 0.2, r++) for (let z = -8 + (r % 2) * 0.2; z < 0; z += 0.4) {
+      g.beginPath(); g.moveTo(X(z), Y(y)); g.lineTo(X(z), Y(y + 0.2)); g.stroke();
+    }
+
+    rect(PANEL.z + PANEL.w, PANEL.y, PANEL.w, PANEL.h, 72.5, 6);      // open door, flat on the wall
+    rect(PANEL.z, PANEL.y, PANEL.w, PANEL.h, 77, 14);                 // enclosure
+    rect(PANEL.z, PANEL.y, PANEL.w - 0.08, PANEL.h - 0.1, 81, 4);     // dead front
+
+    const noise = (r, c) => ((Math.sin(r * 12.9898 + c * 78.233) * 43758.5453) % 1 + 1) % 1;
+    const tempAt = (r, c) => {
+      const hotCol = c === 1, dr = Math.abs(r - HOT_ROW);
+      if (hotCol && dr === 0) return 132;
+      if (hotCol && dr === 1) return 111;
+      if (hotCol && dr === 2) return 99;
+      if (!hotCol && dr === 0) return 101;
+      if (!hotCol && dr === 1) return 94;
+      return 84 + noise(r, c) * 6;
+    };
+    const cz = (c) => PANEL.z + (c === 0 ? PANEL.colZ : -PANEL.colZ);
+    const ry = (r) => PANEL.row0 - r * PANEL.pitch;
+    for (let r = 0; r < PANEL.rows; r++) for (let c = 0; c < 2; c++) rect(cz(c), ry(r), PANEL.bw, PANEL.bh, tempAt(r, c), 7);
+
+    // heat bleeding out of the hot breaker
+    rg = g.createRadialGradient(X(HOT.z), Y(HOT.y), 0, X(HOT.z), Y(HOT.y), 0.19 * S);
+    rg.addColorStop(0, col(134, 0.95)); rg.addColorStop(0.35, col(120, 0.55)); rg.addColorStop(1, col(100, 0));
+    g.fillStyle = rg; g.fillRect(X(HOT.z) - 0.2 * S, Y(HOT.y) - 0.2 * S, 0.4 * S, 0.4 * S);
+    rect(HOT.z, HOT.y, PANEL.bw, PANEL.bh, 133, 10);
+
+    // readouts
+    const FONT = '600 30px Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
+    const tag = (x, y, text) => {
+      g.font = FONT;
+      const w = g.measureText(text).width + 28;
+      g.fillStyle = 'rgba(10,10,10,0.72)'; g.fillRect(x, y - 24, w, 48);
+      g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText(text, x + 14, y + 1);
+    };
+    const spot = (z, y, text) => {
+      const px = X(z), py = Y(y), r = 24;
+      for (const [lw, st] of [[7, 'rgba(10,10,10,0.75)'], [3, '#fff']]) {
+        g.lineWidth = lw; g.strokeStyle = st;
+        g.beginPath(); g.arc(px, py, r, 0, Math.PI * 2); g.stroke();
+        g.beginPath();
+        g.moveTo(px - r - 14, py); g.lineTo(px - r + 8, py); g.moveTo(px + r - 8, py); g.lineTo(px + r + 14, py);
+        g.moveTo(px, py - r - 14); g.lineTo(px, py - r + 8); g.moveTo(px, py + r - 8); g.lineTo(px, py + r + 14);
+        g.stroke();
+      }
+      tag(px + r + 26, py, text);
+    };
+    spot(HOT.z, HOT.y, '132°F');
+    spot(cz(0), ry(14), '86°F');
+
+    const bx = X(PANEL.z + 0.95), by0 = Y(PANEL.y + 0.5), by1 = Y(PANEL.y - 0.5);   // scale bar, left of the panel
+    const lg = g.createLinearGradient(0, by0, 0, by1);
+    for (let i = 0; i <= 10; i++) lg.addColorStop(i / 10, col(T1 - (T1 - T0) * (i / 10)));
+    g.fillStyle = lg; g.fillRect(bx, by0, 26, by1 - by0);
+    g.lineWidth = 2; g.strokeStyle = 'rgba(255,255,255,0.85)'; g.strokeRect(bx, by0, 26, by1 - by0);
+    g.font = FONT; g.fillStyle = '#fff'; g.textBaseline = 'alphabetic';
+    g.fillText(T1 + '°F', bx - 4, by0 - 16);
+    g.textBaseline = 'top'; g.fillText(T0 + '°F', bx - 4, by1 + 14);
+
+    g.font = '600 22px Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
+    g.fillStyle = 'rgba(255,255,255,0.7)'; g.textBaseline = 'alphabetic';
+    const cap = 'ILLUSTRATION  ·  SURFACE READINGS, DEAD FRONT IN PLACE';
+    g.fillText(cap, X(PANEL.z) - g.measureText(cap).width / 2, Y(PANEL.y - PANEL.h / 2 - 0.11));
+    return cv;
+  }
+  const thermalTex = new THREE.CanvasTexture(drawThermal());
   thermalTex.colorSpace = THREE.SRGBColorSpace;
+  thermalTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
   const thermal = new THREE.Mesh(new THREE.PlaneGeometry(THERMAL.w, THERMAL.h),
     new THREE.MeshBasicMaterial({ map: thermalTex, transparent: true, opacity: 0, fog: false }));
   thermal.rotation.y = Math.PI / 2;
@@ -326,8 +431,8 @@ function init(root) {
     { t: 0.835, pos: [9.5, 7.0, -1.5],     look: [-3, 4, -3.75] },     // back in over the parapet
     { t: 0.860, pos: [2.5, 5.9, -3.75],    look: [-5.7, 1.8, -3.75] },
     { t: 0.890, pos: [-2.6, 2.7, -3.75],   look: [-5.7, 1.5, -3.75] }, // down between joists to the panel
-    { t: 0.925, pos: [-3.9, 1.55, -3.75],  look: [-5.7, 1.5, -3.75] }, // panel framed
-    { t: 0.965, pos: [-4.5, 1.56, -3.8],   look: [HOT.x, HOT.y, HOT.z] },
+    { t: 0.925, pos: [-3.9, 1.55, -3.77],  look: [-5.7, 1.5, -3.77] }, // panel framed
+    { t: 0.965, pos: [-4.5, 1.57, -3.8],   look: [HOT.x, HOT.y, HOT.z] },
     { t: 1.000, pos: [-5.3, HOT.y, HOT.z], look: [HOT.x - 0.5, HOT.y, HOT.z] }, // into the hot breaker
   ];
   // On narrow screens the exterior shots pull straight back from what they look at, so the building still fits.
@@ -354,13 +459,13 @@ function init(root) {
   }
 
   const STEPS = [
-    { until: 0.215, name: 'Approach', labels: 'Exterior walls · Roof equipment · Windows · Door openings' },
-    { until: 0.320, name: 'Entry', labels: 'Door openings' },
-    { until: 0.460, name: 'Interior wall', labels: 'Wall construction · Foundation connection' },
-    { until: 0.560, name: 'Above the ceiling', labels: 'Roof structure · Roof-to-wall connection' },
-    { until: 0.820, name: 'Roof assembly', labels: 'Roof deck · Insulation · Membrane · Parapet · Roof equipment' },
-    { until: 0.925, name: 'Electrical panel', labels: 'Panel location' },
-    { until: 1.001, name: 'Thermal scan', labels: 'Surface temperature of breakers' },
+    { until: 0.215, at: 0, name: 'Approach', labels: 'Exterior walls · Roof equipment · Windows · Door openings' },
+    { until: 0.320, at: 0.255, name: 'Entry', labels: 'Door openings' },
+    { until: 0.460, at: 0.43, name: 'Interior wall', labels: 'Wall construction · Foundation connection' },
+    { until: 0.560, at: 0.545, name: 'Above the ceiling', labels: 'Roof structure · Roof-to-wall connection' },
+    { until: 0.820, at: 0.775, name: 'Roof assembly', labels: 'Roof deck · Insulation · Membrane · Parapet · Roof equipment' },
+    { until: 0.925, at: 0.912, name: 'Electrical panel', labels: 'Panel location' },
+    { until: 1.001, at: 0.962, name: 'Thermal scan', labels: 'Surface temperature of breakers' },
   ];
 
   /* ---------- everything as a function of progress ---------- */
@@ -407,6 +512,7 @@ function init(root) {
     if (blackout) blackout.style.opacity = ease(seg(p, 0.972, 0.998));
     if (intro) intro.style.opacity = 1 - seg(p, 0.012, 0.05);
     if (hudBar) hudBar.style.transform = 'scaleX(' + p + ')';
+    if (btnPrev) btnPrev.disabled = p < 0.004;
     const si = STEPS.findIndex((s) => p < s.until);
     if (si !== lastStep && si >= 0) {
       lastStep = si;
@@ -465,6 +571,49 @@ function init(root) {
     if (!raf && visible) { last = performance.now(); raf = requestAnimationFrame(frame); }
   }
 
+  /* Step arrows: each press scrolls the page to that step's key frame, at a pace that lets the transition play. */
+  let tween = 0;
+  const navTop = () => parseFloat(getComputedStyle(stage).top) || 0;
+  const docTop = () => root.getBoundingClientRect().top + window.scrollY;
+  const scrollYFor = (p) => docTop() - navTop() + p * (root.offsetHeight - stage.clientHeight);
+  const jump = (y) => window.scrollTo({ top: y, behavior: 'instant' });
+  function stopTween() { if (tween) { cancelAnimationFrame(tween); tween = 0; } }
+  function scrollToY(dest) {
+    stopTween();
+    const start = window.scrollY, dist = dest - start;
+    if (Math.abs(dist) < 2) return;
+    if (reduceMotion) { jump(dest); return; }
+    const span = root.offsetHeight - stage.clientHeight;
+    const dur = Math.min(2600, Math.max(1100, 900 + 9000 * Math.abs(dist) / span)), t0 = performance.now();
+    const tick = (now) => {
+      const t = clamp01((now - t0) / dur), e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      jump(start + dist * e);
+      tween = t < 1 ? requestAnimationFrame(tick) : 0;
+    };
+    tween = requestAnimationFrame(tick);
+  }
+  function go(dir) {
+    const here = target;
+    let i = -1;
+    if (dir > 0) i = STEPS.findIndex((s) => s.at > here + 0.004);
+    else for (let k = STEPS.length - 1; k >= 0; k--) if (STEPS[k].at < here - 0.004) { i = k; break; }
+    if (i < 0 && dir < 0) return;
+    scrollToY(i >= 0 ? scrollYFor(STEPS[i].at) : docTop() + root.offsetHeight - navTop());   // past the last step: on to the next section
+    if (live) live.textContent = i >= 0 ? 'Step ' + (i + 1) + ' of ' + STEPS.length + ': ' + STEPS[i].name : 'End of walkthrough';
+  }
+  if (btnPrev) btnPrev.addEventListener('click', () => go(-1));
+  if (btnNext) btnNext.addEventListener('click', () => go(1));
+  window.addEventListener('wheel', stopTween, { passive: true });
+  window.addEventListener('touchstart', stopTween, { passive: true });
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') { stopTween(); return; }
+    if (!visible || e.altKey || e.ctrlKey || e.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;
+    const r = root.getBoundingClientRect();
+    if (r.top > window.innerHeight * 0.5 || r.bottom < window.innerHeight * 0.5) return;
+    e.preventDefault();
+    go(e.key === 'ArrowRight' ? 1 : -1);
+  });
+
   window.addEventListener('scroll', readScroll, { passive: true });
   window.addEventListener('resize', () => { resize(); readScroll(); });
   if ('IntersectionObserver' in window) {
@@ -480,6 +629,7 @@ function init(root) {
   /* ---------- debug hooks used for automated checks ---------- */
   window.__walk = {
     get progress() { return current; },
+    get target() { return target; },
     set(p) { current = target = clamp01(p); update(current); renderer.render(scene, camera); return camera.position.toArray(); },
     collisions(samples = 800, margin = 0.12) {
       const hits = [], b = new THREE.Box3(), seen = new Set();

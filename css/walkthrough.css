@@ -45,15 +45,36 @@
   color: var(--white);
   pointer-events: none;
 }
+.walk-hud-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.walk-readout { min-width: 0; }
 .walk-step {
   display: flex; align-items: baseline; gap: 0.9rem;
   font-weight: 700;
 }
 .walk-step [data-walk-num] {
   font-size: 0.72rem; letter-spacing: 0.14em; color: #7FB2E0;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .walk-step [data-walk-name] { font-size: 1.15rem; letter-spacing: -0.01em; }
+
+.walk-nav { display: flex; gap: 0.5rem; flex: none; pointer-events: auto; }
+.walk-arrow {
+  display: grid; place-items: center;
+  width: 48px; height: 48px; padding: 0;
+  color: var(--white);
+  background: rgba(10, 10, 10, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out), border-color 150ms ease, background 150ms ease;
+}
+.walk-arrow:active { transform: scale(0.95); }
+.walk-arrow:disabled { opacity: 0.35; cursor: default; transform: none; }
+.walk-arrow:focus-visible { outline: 2px solid var(--focus-on-dark); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .walk-arrow:not(:disabled):hover { border-color: #7FB2E0; background: rgba(59, 121, 180, 0.3); }
+}
+@media (prefers-reduced-motion: reduce) { .walk-arrow:active { transform: none; } }
 .walk-labels {
   margin-top: 0.35rem;
   font-size: 0.86rem;
