@@ -323,6 +323,26 @@ function init(root) {
     scene.add(im);
   }
 
+  // signage: wordmark over the storefront, mark on the drive-through side
+  {
+    const loader = new THREE.TextureLoader(), white = lam(0xf4f6f8);
+    const art = (url, w, h) => {
+      const t = loader.load(url, () => { if (typeof kick === 'function') kick(); });
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = maxAniso;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: t, transparent: true }));
+      m.userData.noShadow = true;
+      scene.add(m);
+      return m;
+    };
+    box(5.0, 1.15, 0.08, 2.05, 3.78, 11.04, white, { name: 'sign', collide: false });
+    art('image/Horizontal-Logo.png', 4.5, 4.5 * 118 / 727).position.set(2.05, 3.78, 11.086);
+    box(0.08, 2.0, 2.0, 6.04, 3.3, 0.8, white, { name: 'sign', collide: false });
+    const mark = art('image/walkthrough-mark.png', 1.6, 1.6);
+    mark.position.set(6.086, 3.3, 0.8);
+    mark.rotation.y = Math.PI / 2;
+  }
+
   // slab, with a cutaway at the west wall to show the foundation connection
   const CUT = { x0: -5.7, x1: -4.7, z0: 4.2, z1: 7.0 };
   box(10.4, 0.15, 21.4, 0.5, -0.075, 0, M.slab, { name: 'slab' });
@@ -679,7 +699,7 @@ function init(root) {
   scene.traverse((o) => {
     if (!o.isMesh || o.material.isMeshBasicMaterial) return;
     o.receiveShadow = true;
-    o.castShadow = o.material !== M.glass;
+    o.castShadow = o.material !== M.glass && !o.userData.noShadow;
   });
 
   /* ---------- data labels, pinned to the component they describe ----------
@@ -687,7 +707,7 @@ function init(root) {
   let labelP = 0;
   const mix3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
   const LABELS = [
-    { tag: 'COPE',   field: 'Exterior walls',   value: 'Brick veneer, CMU',        at: () => [2.6, 3.8, 11.02],                on: [0.045, 0.165], off: [-40, -78] },
+    { tag: 'COPE',   field: 'Exterior walls',   value: 'Brick veneer, CMU',        at: () => [-4.9, 3.6, 11.02],               on: [0.045, 0.165], off: [-40, -78] },
     { tag: 'NatCat', field: 'Roof equipment',   value: 'Roof mounted unit',        at: () => [1.6, rtus.position.y + 1.6, 6.6], on: [0.055, 0.130], off: [60, -64] },
     { tag: 'NatCat', field: 'Windows',          value: 'Storefront glazing',       at: () => [2.9, 1.7, 11.0],                 on: [0.065, 0.200], off: [70, 60] },
     { tag: 'NatCat', field: 'Door openings',    value: 'Glass entry',              at: () => [-2.5, 2.25, 11.0],               on: [0.075, 0.236], off: [-60, 54] },
