@@ -637,9 +637,10 @@ function init(root) {
   /* ---------- data labels, pinned to the component they describe ----------
      at: point in the world (functions follow moving parts). on: progress window. off: where the tag sits from its dot, px. */
   let labelP = 0;
+  const mix3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
   const LABELS = [
     { tag: 'COPE',   field: 'Exterior walls',   value: 'Brick veneer, CMU',        at: () => [2.6, 3.8, 11.02],                on: [0.045, 0.165], off: [-40, -78] },
-    { tag: 'NatCat', field: 'Roof equipment',   value: 'RTU, curb-mounted',        at: () => [1.6, rtus.position.y + 1.6, 6.6], on: [0.055, 0.130], off: [60, -64] },
+    { tag: 'NatCat', field: 'Roof equipment',   value: 'Roof mounted unit',        at: () => [1.6, rtus.position.y + 1.6, 6.6], on: [0.055, 0.130], off: [60, -64] },
     { tag: 'NatCat', field: 'Windows',          value: 'Storefront glazing',       at: () => [2.9, 1.7, 11.0],                 on: [0.065, 0.200], off: [70, 60] },
     { tag: 'NatCat', field: 'Door openings',    value: 'Glass entry',              at: () => [-2.5, 2.25, 11.0],               on: [0.075, 0.236], off: [-60, 54] },
     { tag: 'COPE',   field: 'Interior wall',    value: 'Drywall',                  at: () => [-5.64, 1.9, 2.6 + 3.4 * ease(seg(labelP, 0.29, 0.335))], on: [0.250, 0.352], off: [80, -60] },
@@ -648,12 +649,10 @@ function init(root) {
     { tag: 'NatCat', field: 'Foundation',       value: 'Anchor bolts',             at: () => [-5.64, 0.22, 5.4],               on: [0.440, 0.488], off: [90, 30] },
     { tag: 'COPE',   field: 'Roof framing',     value: 'Steel bar joists',         at: () => [-3.6, 3.63, 4.5],                on: [0.515, 0.600], off: [90, 50] },
     { tag: 'NatCat', field: 'Roof-to-wall',     value: 'Joist seat, bearing plate', at: () => [-5.62, 4.02, 4.5],              on: [0.530, 0.600], off: [70, -60] },
-    { tag: 'NatCat', field: 'Roof equipment',   value: 'RTU, curb-mounted',        at: () => [2.3, rtus.position.y + 1.6, -1.6], on: [0.738, 0.815], off: [70, -50] },
+    { tag: 'NatCat', field: 'Roof equipment',   value: 'Roof mounted unit',        at: () => [2.3, rtus.position.y + 1.6, -1.6], on: [0.738, 0.815], off: [70, -50] },
     { tag: 'NatCat', field: 'Roof cover',       value: 'Single-ply membrane',      at: () => [5.7, membrane.position.y, 4.5],  on: [0.744, 0.815], off: [-70, -56] },
-    { tag: 'COPE',   field: 'Insulation',       value: 'Rigid board',              at: () => [5.7, insul.position.y, -4.0],    on: [0.750, 0.815], off: [80, -18] },
-    { tag: 'NatCat', field: 'Roof deck',        value: 'Metal deck',               at: () => [5.7, deck.position.y + 0.03, 5.5], on: [0.756, 0.815], off: [-80, 20] },
-    { tag: 'COPE',   field: 'Roof framing',     value: 'Steel bar joists',         at: () => [3.4, 4.1, -7.5],                 on: [0.762, 0.815], off: [90, 26] },
-    { tag: 'NatCat', field: 'Parapet',          value: 'Metal coping',             at: () => [5.85, 5.06, 7.5],                on: [0.768, 0.815], off: [-70, 70] },
+    { tag: 'NatCat', field: 'Roof deck',        value: 'Metal deck',               at: () => mix3([-4.0, deck.position.y, -5.0], [5.7, deck.position.y + 0.03, 5.5], ease(seg(labelP, 0.715, 0.75))), on: [0.618, 0.815], off: [-80, 20] },
+    { tag: 'COPE',   field: 'Roof framing',     value: 'Steel bar joists',         at: () => mix3([-2.6, 4.1, 1.5], [3.4, 4.1, -7.5], ease(seg(labelP, 0.715, 0.75))), on: [0.612, 0.815], off: [90, 26] },
     { tag: 'COPE',   field: 'Electrical',       value: 'Main panel',               at: () => [-5.6, 2.02, PANEL_Z - 0.21],     on: [0.897, 0.930], off: [70, -50] },
     { tag: 'Thermal', field: 'Panel scan',      value: 'Breaker running hot',      at: () => [HOT.x, HOT.y, HOT.z],            on: [0.944, 0.979], off: [-90, -70] },
   ];
