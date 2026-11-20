@@ -75,12 +75,6 @@
   .walk-arrow:not(:disabled):hover { border-color: #7FB2E0; background: rgba(59, 121, 180, 0.3); }
 }
 @media (prefers-reduced-motion: reduce) { .walk-arrow:active { transform: none; } }
-.walk-labels {
-  margin-top: 0.35rem;
-  font-size: 0.86rem;
-  color: var(--muted-on-dark);
-  max-width: 44rem;
-}
 .walk-bar {
   margin-top: 0.9rem;
   height: 2px;
@@ -107,4 +101,44 @@
   position: absolute; width: 1px; height: 1px;
   margin: -1px; padding: 0; overflow: hidden;
   clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* Data labels pinned to the model. Positions are set from script every frame. */
+.walk-label-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.walk-label { position: absolute; left: 0; top: 0; opacity: 0; visibility: hidden; }
+.walk-label > * { position: absolute; left: 0; top: 0; will-change: transform; }
+.wl-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 0 0 2px #7FB2E0, 0 0 0 5px rgba(10, 10, 10, 0.45);
+}
+.wl-line { height: 1px; margin-top: -0.5px; background: #7FB2E0; transform-origin: 0 50%; }
+.wl-chip {
+  padding: 0.45rem 0.7rem 0.5rem;
+  background: rgba(10, 10, 10, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 2px solid #7FB2E0;
+  border-radius: var(--radius);
+  white-space: nowrap;
+  color: var(--white);
+}
+.wl-top { display: flex; align-items: center; gap: 0.5rem; }
+.wl-tag {
+  font-size: 0.69rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 0.05rem 0.4rem; border-radius: 2px; line-height: 1.5;
+}
+.wl-cope { color: #0A0A0A; background: #7FB2E0; }
+.wl-natcat { color: var(--white); background: var(--teal); }
+.wl-thermal { color: #0A0A0A; background: #F8A01C; }
+.wl-field { font-size: 0.69rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.72); }
+.wl-value { margin-top: 0.2rem; font-size: 0.98rem; font-weight: 700; letter-spacing: -0.005em; }
+@media (max-width: 600px) {
+  .wl-chip { padding: 0.35rem 0.55rem 0.4rem; }
+  .wl-value { font-size: 0.9rem; }
+}
+/* Phones: one line per tag so the building stays visible behind them. */
+@media (max-width: 600px) {
+  .wl-chip { display: flex; align-items: center; gap: 0.45rem; }
+  .wl-field { display: none; }
+  .wl-value { margin-top: 0; font-size: 0.84rem; }
 }

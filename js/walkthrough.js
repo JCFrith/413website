@@ -1,6 +1,7 @@
 /* 413 Solution: scroll-driven building walkthrough.
-   Stage 1 of the build: blockout geometry and the camera path only.
-   Everything on screen is a pure function of one number, scroll progress p in [0, 1]. */
+   A generic single-storey commercial building: brick veneer over unreinforced CMU, steel bar joists,
+   metal deck, rigid insulation, single-ply membrane. Everything on screen, including the data labels,
+   is a pure function of one number: scroll progress p in [0, 1]. */
 import * as THREE from './vendor/three.module.min.js';
 
 const root = document.querySelector('[data-walkthrough]');
@@ -13,7 +14,6 @@ function init(root) {
   const intro = root.querySelector('.walk-intro');
   const hudNum = root.querySelector('[data-walk-num]');
   const hudName = root.querySelector('[data-walk-name]');
-  const hudLabels = root.querySelector('[data-walk-labels]');
   const hudBar = root.querySelector('[data-walk-bar]');
   const fallback = root.querySelector('.walk-fallback');
   const btnPrev = root.querySelector('[data-walk-prev]');
@@ -51,14 +51,92 @@ function init(root) {
   scene.add(fill);
 
   const lam = (color, extra) => new THREE.MeshLambertMaterial(Object.assign({ color }, extra));
+
+  // Small repeating textures drawn in code. Each covers a stated real-world size so coursing is to scale.
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  function tile(w, h, draw) {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    draw(cv.getContext('2d'), w, h);
+    const t = new THREE.CanvasTexture(cv);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = maxAniso;
+    return t;
+  }
+  const rnd = (i) => ((Math.sin(i * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1;
+  const T = {
+    // 0.4 m x 0.2 m: two bricks by three courses, running bond
+    brick: tile(256, 128, (g, w, h) => {
+      g.fillStyle = '#343c44'; g.fillRect(0, 0, w, h);
+      const ch = h / 3, bl = w / 2, j = 4;
+      for (let r = 0; r < 3; r++) for (let c = -1; c < 3; c++) {
+        const v = 78 + Math.round(rnd(r * 7 + c + 3) * 18);
+        g.fillStyle = 'rgb(' + v + ',' + (v + 12) + ',' + (v + 23) + ')';
+        g.fillRect(c * bl + (r % 2) * bl / 2 + j / 2, r * ch + j / 2, bl - j, ch - j);
+      }
+    }),
+    // 0.4 m x 0.4 m: one block by two courses, running bond
+    cmu: tile(256, 256, (g, w, h) => {
+      g.fillStyle = '#7b858e'; g.fillRect(0, 0, w, h);
+      const j = 5;
+      for (let r = 0; r < 2; r++) for (let c = -1; c < 2; c++) {
+        const v = 164 + Math.round(rnd(r * 5 + c + 11) * 10);
+        g.fillStyle = 'rgb(' + v + ',' + (v + 9) + ',' + (v + 17) + ')';
+        g.fillRect(c * w + (r % 2) * w / 2 + j / 2, r * h / 2 + j / 2, w - j, h / 2 - j);
+      }
+    }),
+    // 0.6 m ceiling tile in its grid
+    ceiling: tile(128, 128, (g, w, h) => {
+      g.fillStyle = '#dde3e8'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#aab4bd'; g.lineWidth = 5; g.strokeRect(0, 0, w, h);
+    }),
+    // 3 m membrane sheets with a lap seam
+    membrane: tile(256, 256, (g, w, h) => {
+      g.fillStyle = '#f5f7f9'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#d3dae0'; g.fillRect(0, 0, w, 4);
+    }),
+    // 1.2 m x 2.4 m insulation boards, staggered
+    insul: tile(256, 256, (g, w, h) => {
+      g.fillStyle = '#dfe5ea'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#b8c2cb';
+      g.fillRect(0, 0, w, 3); g.fillRect(0, h / 2, w, 3); g.fillRect(0, 0, 3, h / 2); g.fillRect(w / 2, h / 2, 3, h / 2);
+    }),
+    // 3 m slab control joints
+    slab: tile(128, 128, (g, w, h) => {
+      g.fillStyle = '#2d353c'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#20262c'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+    }),
+    // 1.5 m sidewalk panels
+    walk: tile(128, 128, (g, w, h) => {
+      g.fillStyle = '#3f4952'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#2c343b'; g.lineWidth = 4; g.strokeRect(0, 0, w, h);
+    }),
+  };
   const M = {
-    veneer: lam(0x55616c), cmu: lam(0xaab3bb), drywall: lam(0xeef1f4), slab: lam(0x2b333a),
+    veneer: lam(0xffffff, { map: T.brick }), cmu: lam(0xffffff, { map: T.cmu }), drywall: lam(0xeef1f4),
+    slab: lam(0xffffff, { map: T.slab }), walk: lam(0xffffff, { map: T.walk }),
     pit: lam(0x14181c), footing: lam(0x8b949c), steel: lam(0x7d8fa3), deck: lam(0x93a1b0),
-    insul: lam(0xdfe5ea), membrane: lam(0xffffff), rtu: lam(0xb9c2ca), ceiling: lam(0xd9dfe4),
-    counter: lam(0x3d464d), panel: lam(0x6a7580), breaker: lam(0x1b2026), coping: lam(0xc5ced6),
-    door: lam(0x39424a), ground: lam(0x0f1317),
+    insul: lam(0xffffff, { map: T.insul }), membrane: lam(0xffffff, { map: T.membrane }), rtu: lam(0xb9c2ca),
+    ceiling: lam(0xffffff, { map: T.ceiling }), counter: lam(0x3d464d), panel: lam(0x6a7580), breaker: lam(0x1b2026),
+    coping: lam(0xc5ced6), door: lam(0x39424a), ground: lam(0x0f1317), frame: lam(0x1c2228), metal: lam(0xaeb8c1),
+    accent: lam(0x7fb2e0), table: lam(0x59636d),
     glass: lam(0x3b79b4, { transparent: true, opacity: 0.32 }),
   };
+  const TILE = new Map([[M.veneer, [0.4, 0.2]], [M.cmu, [0.4, 0.4]], [M.slab, [3, 3]], [M.walk, [1.5, 1.5]],
+    [M.insul, [2.4, 2.4]], [M.membrane, [3, 3]], [M.ceiling, [0.6, 0.6]]]);
+
+  // Map a box's texture by where it sits in the world, so coursing runs unbroken from one piece to the next.
+  function worldUV(mesh, tu, tv) {
+    const g = mesh.geometry, pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv, o = mesh.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i) + o.x, y = pos.getY(i) + o.y, z = pos.getZ(i) + o.z;
+      if (Math.abs(nor.getX(i)) > 0.5) uv.setXY(i, z / tu, y / tv);
+      else if (Math.abs(nor.getY(i)) > 0.5) uv.setXY(i, x / tu, z / tv);
+      else uv.setXY(i, x / tu, y / tv);
+    }
+    uv.needsUpdate = true;
+  }
 
   const colliders = [];      // objects the camera must never be inside
   const staticBoxes = [];    // hand-placed collision boxes (instanced geometry)
@@ -79,9 +157,10 @@ function init(root) {
     if (o.fade) { mat = material.clone(); mat.transparent = true; }
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
     mesh.position.set(x, y, z);
+    if (TILE.has(material)) worldUV(mesh, ...TILE.get(material));
     mesh.name = o.name || '';
     mesh.userData.base = mat.opacity;
-    if (o.edges !== false) addEdges(mesh);
+    if (o.edges !== false) addEdges(mesh, 0x9fb4c9, material.map ? 0.16 : 0.28);
     (o.parent || scene).add(mesh);
     if (o.collide !== false) colliders.push(mesh);
     return mesh;
@@ -93,6 +172,8 @@ function init(root) {
     const e = mesh.userData.edges;
     if (e) e.material.opacity = v * e.userData.base;
   }
+
+  const PANEL_Z = -3.77;
 
   /* ---------- building: 12 m x 22 m, front faces +z ----------
      Exterior wall: 0.1 brick veneer over 0.2 unreinforced CMU. Inner CMU face at x = +-5.7, z = +-10.7. */
@@ -110,7 +191,22 @@ function init(root) {
       if (o.y0 > 0) spans.push([o.a, o.b, 0, o.y0]);
       else layer(o.a, o.b, GRADE, 0, 0.15, 0.3, M.slab, { name: name + ' threshold' });
       if (o.y1 < H) spans.push([o.a, o.b, o.y1, H]);
-      if (o.fill === 'glass') layer(o.a, o.b, o.y0, o.y1, 0.15, 0.03, M.glass, { name: name + ' glazing' });
+      if (o.fill === 'glass') {
+        layer(o.a, o.b, o.y0, o.y1, 0.15, 0.03, M.glass, { name: name + ' glazing' });
+        const bar = { edges: false, collide: false }, n = Math.max(1, Math.ceil((o.b - o.a) / 1.5));
+        layer(o.a, o.b, o.y0, o.y0 + 0.06, 0.15, 0.09, M.frame, bar);
+        layer(o.a, o.b, o.y1 - 0.06, o.y1, 0.15, 0.09, M.frame, bar);
+        for (let i = 0; i <= n; i++) {
+          const x = o.a + (o.b - o.a) * i / n, x0 = Math.max(o.a, x - 0.03);
+          layer(x0, Math.min(o.b, x0 + 0.06), o.y0, o.y1, 0.15, 0.09, M.frame, bar);
+        }
+      }
+      if (o.fill === 'entry') {
+        const bar = { edges: false, collide: false };
+        layer(o.a - 0.06, o.a, 0, o.y1 + 0.06, 0.15, 0.1, M.frame, bar);
+        layer(o.b, o.b + 0.06, 0, o.y1 + 0.06, 0.15, 0.1, M.frame, bar);
+        layer(o.a, o.b, o.y1, o.y1 + 0.06, 0.15, 0.1, M.frame, bar);
+      }
       if (o.fill === 'door') layer(o.a, o.b, o.y0, o.y1, 0.12, 0.05, M.door, { name: name + ' door' });
       cur = o.b;
     }
@@ -127,7 +223,7 @@ function init(root) {
   }
 
   wall({ name: 'front', axis: 'x', outer: 11, sign: 1, from: -5.7, to: 5.7, liner: { from: -5.7, to: 5.7 },
-    openings: [{ a: -3.4, b: -1.6, y0: 0, y1: 2.3 }, { a: -0.9, b: 5.0, y0: 0.7, y1: 2.6, fill: 'glass' }] });
+    openings: [{ a: -3.4, b: -1.6, y0: 0, y1: 2.3, fill: 'entry' }, { a: -0.9, b: 5.0, y0: 0.7, y1: 2.6, fill: 'glass' }] });
   wall({ name: 'rear', axis: 'x', outer: -11, sign: -1, from: -5.7, to: 5.7,
     openings: [{ a: 2.2, b: 3.2, y0: 0, y1: 2.2, fill: 'door' }] });
   wall({ name: 'east', axis: 'z', outer: 6, sign: 1, from: -11, to: 11, liner: { from: 1.56, to: 10.7 },
@@ -168,6 +264,25 @@ function init(root) {
     scene.add(grid);
   }
 
+  // site: sidewalk, entry canopy, bollards, parking stalls, drive-through lane
+  box(15.6, 0.13, 2.6, 0.6, GRADE + 0.065, 12.3, M.walk, { name: 'sidewalk', edges: false });
+  box(1.8, 0.13, 22, 6.9, GRADE + 0.065, 0, M.walk, { name: 'sidewalk', edges: false });
+  box(3.4, 0.12, 1.5, -2.5, 2.85, 11.75, M.coping, { name: 'entry canopy' });
+  for (const x of [-4.4, -0.6]) {
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.0, 12), M.accent);
+    b.position.set(x, GRADE + 0.63, 13.3);
+    scene.add(b);
+  }
+  {
+    const lines = [];
+    for (let x = -13.5; x <= 13.6; x += 2.7) lines.push([x, 17.6, 0.1, 5.0]);          // stalls facing the building
+    lines.push([8.4, 0, 0.1, 21], [11.6, 0, 0.1, 21]);                                  // drive-through lane
+    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.01, 1), new THREE.MeshBasicMaterial({ color: 0x4d5a67 }), lines.length);
+    const m4 = new THREE.Matrix4();
+    lines.forEach(([x, z, w, d], i) => { m4.makeScale(w, 1, d); m4.setPosition(x, GRADE + 0.012, z); im.setMatrixAt(i, m4); });
+    scene.add(im);
+  }
+
   // slab, with a cutaway at the west wall to show the foundation connection
   const CUT = { x0: -5.7, x1: -4.7, z0: 4.2, z1: 7.0 };
   box(10.4, 0.15, 21.4, 0.5, -0.075, 0, M.slab, { name: 'slab' });
@@ -198,6 +313,18 @@ function init(root) {
   box(3.7, 2.9, 0.12, 3.85, 1.45, 1.5, M.drywall, { name: 'partition' });
   box(1.0, 0.7, 0.12, 1.5, 2.55, 1.5, M.drywall, { name: 'partition header' });
   box(6.0, 1.05, 0.7, 0.4, 0.525, 2.7, M.counter, { name: 'counter' });
+  for (const [x, z] of [[1.6, 5.2], [3.9, 5.2], [1.6, 7.4], [3.9, 7.4], [1.6, 9.5], [3.9, 9.5]]) {
+    box(0.75, 0.04, 0.75, x, 0.74, z, M.table, { name: 'table' });
+    box(0.08, 0.72, 0.08, x, 0.36, z, M.frame, { name: 'table', edges: false });
+  }
+  box(0.8, 0.9, 8.5, 5.25, 0.45, -5.2, M.metal, { name: 'kitchen line' });       // back of house
+  box(2.2, 0.9, 1.1, 0.8, 0.45, -7.4, M.metal, { name: 'prep island' });
+  box(0.6, 0.4, 18.5, 3.3, 3.26, 0, M.metal, { name: 'supply duct' });           // above the ceiling
+  for (const z of [PANEL_Z - 0.09, PANEL_Z + 0.07]) {                            // conduit rising from the panel
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.5, 10), M.metal);
+    c.position.set(-5.665, 2.8, z);
+    scene.add(c);
+  }
 
   // west wall, dining side: furring over CMU, then removable drywall panels
   const FUR = [];
@@ -248,6 +375,14 @@ function init(root) {
       }
       staticBoxes.push({ name: 'joist', box: new THREE.Box3(new V3(-5.7, 3.58, z - 0.07), new V3(5.7, 4.1, z + 0.07)) });
     }
+    // each joist end sits on a steel bearing plate in the masonry
+    const seats = new THREE.InstancedMesh(new THREE.BoxGeometry(0.16, 0.035, 0.24), M.accent, JOIST_Z.length * 2);
+    const s4 = new THREE.Matrix4();
+    JOIST_Z.forEach((z, i) => {
+      s4.makeTranslation(-5.62, 4.03, z); seats.setMatrixAt(i * 2, s4);
+      s4.makeTranslation(5.62, 4.03, z); seats.setMatrixAt(i * 2 + 1, s4);
+    });
+    scene.add(seats);
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), M.steel, parts.length);
     const m4 = new THREE.Matrix4();
     parts.forEach((pt, i) => {
@@ -258,27 +393,62 @@ function init(root) {
     scene.add(im);
   }
 
-  // roof assembly, bottom to top: metal deck, insulation, single-ply membrane, rooftop equipment
-  const deck = box(11.4, 0.08, 21.4, 0, 4.14, 0, M.deck, { name: 'metal deck' });
+  // roof assembly, bottom to top: fluted metal deck, rigid insulation, single-ply membrane, rooftop equipment
+  const DECK_Y = 4.112;
+  const deck = (() => {
+    const width = 11.4, depth = 21.4, pitch = 0.3, rise = 0.06, t = 0.012, n = Math.round(width / pitch), x0 = -width / 2;
+    const top = [];
+    for (let i = 0; i < n; i++) { const x = x0 + i * pitch; top.push([x, 0], [x + 0.1, 0], [x + 0.15, rise], [x + 0.25, rise]); }
+    top.push([x0 + n * pitch, 0]);
+    const sh = new THREE.Shape();
+    top.forEach(([x, y], i) => (i ? sh.lineTo(x, y) : sh.moveTo(x, y)));
+    for (let i = top.length - 1; i >= 0; i--) sh.lineTo(top[i][0], top[i][1] - t);
+    sh.closePath();
+    const geo = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: false, steps: 1 });
+    geo.translate(0, 0, -depth / 2);
+    const mesh = new THREE.Mesh(geo, M.deck);
+    mesh.position.y = DECK_Y;
+    mesh.name = 'metal deck';
+    scene.add(mesh);
+    colliders.push(mesh);
+    return mesh;
+  })();
   const insul = box(11.4, 0.2, 21.4, 0, 4.28, 0, M.insul, { name: 'insulation' });
-  const membrane = box(11.4, 0.04, 21.4, 0, 4.40, 0, M.membrane, { name: 'membrane' });
+  const membrane = new THREE.Group();
+  membrane.position.y = 4.40;
+  membrane.name = 'membrane';
+  scene.add(membrane);
+  colliders.push(membrane);
+  box(11.4, 0.04, 21.4, 0, 0, 0, M.membrane, { parent: membrane, collide: false });
+  for (const [w, d, x, z] of [[0.02, 21.4, 5.69, 0], [0.02, 21.4, -5.69, 0], [11.4, 0.02, 0, 10.69], [11.4, 0.02, 0, -10.69]]) {
+    box(w, 0.5, d, x, 0.27, z, M.membrane, { parent: membrane, collide: false, edges: false });   // flashing up the parapet
+  }
   const rtus = new THREE.Group();
   rtus.position.y = 4.42;
+  rtus.name = 'rooftop equipment';
   scene.add(rtus);
-  for (const [x, z, w, d] of [[-2.4, -6.2, 2.4, 1.4], [2.3, -1.6, 2.4, 1.4], [1.6, 6.6, 2.0, 1.3]]) {
+  colliders.push(rtus);
+  const RTU = [[-2.4, -6.2, 2.4, 1.4], [2.3, -1.6, 2.4, 1.4], [1.6, 6.6, 2.0, 1.3]];
+  for (const [x, z, w, d] of RTU) {
     box(w + 0.16, 0.3, d + 0.16, x, 0.15, z, M.coping, { parent: rtus, name: 'RTU curb', collide: false });
     box(w, 1.25, d, x, 0.925, z, M.rtu, { parent: rtus, name: 'RTU', collide: false });
+    box(w * 0.34, 0.9, 0.02, x - w * 0.28, 0.95, z + d / 2 + 0.011, M.frame, { parent: rtus, collide: false, edges: false });  // coil face
+    for (const fx of [-0.5, 0.5]) {
+      const fan = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.05, 24), M.frame);
+      fan.position.set(x + fx * w * 0.5, 1.575, z);
+      rtus.add(fan);
+    }
   }
-  for (const [x, z] of [[-3.2, -1.2], [-2.2, -1.2], [-3.2, 0.2]]) {
-    const f = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.4, 0.5, 20), M.rtu);
-    f.position.set(x, 0.25, z);
-    rtus.add(f);
+  for (const [x, z] of [[-3.2, -1.2], [-2.2, -1.2], [-3.2, 0.2]]) {      // kitchen exhaust fans
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.32, 20), M.rtu);
+    base.position.set(x, 0.16, z);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 0.22, 20), M.coping);
+    cap.position.set(x, 0.43, z);
+    rtus.add(base, cap);
   }
-  colliders.push(rtus);
-  rtus.name = 'rooftop equipment';
 
   // electrical panel on the west wall, back of house
-  const PANEL = { y: 1.5, z: -3.77, w: 0.42, h: 1.125, rows: 20, row0: 1.95, pitch: 0.0474, colZ: 0.062, bw: 0.1, bh: 0.036 };
+  const PANEL = { y: 1.5, z: PANEL_Z, w: 0.42, h: 1.125, rows: 20, row0: 1.95, pitch: 0.0474, colZ: 0.062, bw: 0.1, bh: 0.036 };
   box(0.1, PANEL.h, PANEL.w, -5.65, PANEL.y, PANEL.z, M.panel, { name: 'panel enclosure' });
   box(0.006, PANEL.h - 0.1, PANEL.w - 0.08, -5.597, PANEL.y, PANEL.z, lam(0x8792a0), { name: 'dead front', collide: false });
   {
@@ -296,7 +466,6 @@ function init(root) {
   box(0.012, PANEL.h, PANEL.w, 0, 0, -PANEL.w / 2, M.panel, { parent: panelDoor, name: 'panel door', collide: false });
 
   // Thermal view: a render of the modelled panel, drawn to match it breaker for breaker.
-  // Illustrative only. Temperatures are surface readings of breaker bodies with the dead front in place.
   const THERMAL = { x: -5.5, y: PANEL.y, z: PANEL.z, w: 4.0, h: 2.8 };
   const HOT_ROW = 7;
   const HOT = new V3(THERMAL.x, PANEL.row0 - HOT_ROW * PANEL.pitch, PANEL.z - PANEL.colZ);
@@ -393,10 +562,6 @@ function init(root) {
     g.fillText(T1 + '°F', bx - 4, by0 - 16);
     g.textBaseline = 'top'; g.fillText(T0 + '°F', bx - 4, by1 + 14);
 
-    g.font = '600 22px Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
-    g.fillStyle = 'rgba(255,255,255,0.7)'; g.textBaseline = 'alphabetic';
-    const cap = 'ILLUSTRATION  ·  SURFACE READINGS, DEAD FRONT IN PLACE';
-    g.fillText(cap, X(PANEL.z) - g.measureText(cap).width / 2, Y(PANEL.y - PANEL.h / 2 - 0.11));
     return cv;
   }
   const thermalTex = new THREE.CanvasTexture(drawThermal());
@@ -458,14 +623,102 @@ function init(root) {
     camera.lookAt(_look);
   }
 
+  /* ---------- data labels, pinned to the component they describe ----------
+     at: point in the world (functions follow moving parts). on: progress window. off: where the tag sits from its dot, px. */
+  const LABELS = [
+    { tag: 'COPE',   field: 'Exterior walls',   value: 'Brick veneer, CMU',        at: () => [2.6, 3.8, 11.02],                on: [0.045, 0.165], off: [-40, -78] },
+    { tag: 'NatCat', field: 'Roof equipment',   value: 'RTU, curb-mounted',        at: () => [1.6, rtus.position.y + 1.6, 6.6], on: [0.055, 0.130], off: [60, -64] },
+    { tag: 'NatCat', field: 'Windows',          value: 'Storefront glazing',       at: () => [2.9, 1.7, 11.0],                 on: [0.065, 0.200], off: [70, 60] },
+    { tag: 'NatCat', field: 'Door openings',    value: 'Glass entry',              at: () => [-2.5, 2.25, 11.0],               on: [0.075, 0.236], off: [-60, 54] },
+    { tag: 'COPE',   field: 'Wall construction', value: 'CMU, ISO 4',              at: () => [-5.7, 2.05, 5.2],                on: [0.398, 0.476], off: [80, -70] },
+    { tag: 'NatCat', field: 'Foundation',       value: 'Anchor bolts',             at: () => [-5.64, 0.22, 5.4],               on: [0.440, 0.488], off: [90, 30] },
+    { tag: 'COPE',   field: 'Roof framing',     value: 'Steel bar joists',         at: () => [-3.6, 3.63, 4.5],                on: [0.515, 0.600], off: [90, 50] },
+    { tag: 'NatCat', field: 'Roof-to-wall',     value: 'Joist seat, bearing plate', at: () => [-5.62, 4.02, 4.5],              on: [0.530, 0.600], off: [70, -60] },
+    { tag: 'NatCat', field: 'Roof equipment',   value: 'RTU, curb-mounted',        at: () => [2.3, rtus.position.y + 1.6, -1.6], on: [0.738, 0.815], off: [70, -50] },
+    { tag: 'NatCat', field: 'Roof cover',       value: 'Single-ply membrane',      at: () => [5.7, membrane.position.y, 4.5],  on: [0.744, 0.815], off: [-70, -56] },
+    { tag: 'COPE',   field: 'Insulation',       value: 'Rigid board',              at: () => [5.7, insul.position.y, -4.0],    on: [0.750, 0.815], off: [80, -18] },
+    { tag: 'NatCat', field: 'Roof deck',        value: 'Metal deck',               at: () => [5.7, deck.position.y + 0.03, 5.5], on: [0.756, 0.815], off: [-80, 20] },
+    { tag: 'COPE',   field: 'Roof framing',     value: 'Steel bar joists',         at: () => [3.4, 4.1, -7.5],                 on: [0.762, 0.815], off: [90, 26] },
+    { tag: 'NatCat', field: 'Parapet',          value: 'Metal coping',             at: () => [5.85, 5.06, 7.5],                on: [0.768, 0.815], off: [-70, 70] },
+    { tag: 'COPE',   field: 'Electrical',       value: 'Main panel',               at: () => [-5.6, 2.02, PANEL_Z - 0.21],     on: [0.897, 0.930], off: [70, -50] },
+    { tag: 'Thermal', field: 'Panel scan',      value: 'Breaker running hot',      at: () => [HOT.x, HOT.y, HOT.z],            on: [0.944, 0.979], off: [-90, -70] },
+  ];
+  const layer = document.createElement('div');
+  layer.className = 'walk-label-layer';
+  layer.setAttribute('aria-hidden', 'true');
+  stage.insertBefore(layer, blackout);
+  for (const L of LABELS) {
+    const el = document.createElement('div');
+    el.className = 'walk-label';
+    el.innerHTML = '<i class="wl-line"></i><i class="wl-dot"></i><div class="wl-chip"><div class="wl-top"><span class="wl-tag wl-' +
+      L.tag.toLowerCase() + '">' + L.tag + '</span><span class="wl-field">' + L.field + '</span></div><div class="wl-value">' + L.value + '</div></div>';
+    layer.appendChild(el);
+    L.el = el; L.line = el.children[0]; L.dot = el.children[1]; L.chip = el.children[2]; L.shown = false;
+  }
+  let stageW = 1, stageH = 1;
+  function measureLabels() {
+    stageW = stage.clientWidth; stageH = stage.clientHeight;
+    for (const L of LABELS) { L.w = L.chip.offsetWidth; L.h = L.chip.offsetHeight; }
+  }
+  const _a = new V3(), _c = new V3();
+  function placeLabels(p) {
+    const k = stageW < 600 ? 0.6 : 1, reserve = stageW < 600 ? 128 : 118, bottom = stageH - reserve, live = [];
+    camera.updateMatrixWorld(true);
+    for (const L of LABELS) {
+      let o = Math.min(seg(p, L.on[0], L.on[0] + 0.012), 1 - seg(p, L.on[1] - 0.012, L.on[1])), sx = 0, sy = 0;
+      if (o > 0) {
+        _a.fromArray(L.at());
+        if (_c.copy(_a).applyMatrix4(camera.matrixWorldInverse).z > -0.1) o = 0;
+        else {
+          _a.project(camera);
+          sx = (_a.x * 0.5 + 0.5) * stageW; sy = (-_a.y * 0.5 + 0.5) * stageH;
+          if (sx < -10 || sx > stageW + 10 || sy < -10 || sy > stageH + 10) o = 0;
+        }
+      }
+      if (o <= 0.001) {
+        if (L.shown) { L.shown = false; L.el.style.opacity = 0; L.el.style.visibility = 'hidden'; }
+        continue;
+      }
+      L.o = o; L.sx = sx; L.sy = sy;
+      L.cx = Math.min(Math.max(sx + L.off[0] * k - (L.off[0] < 0 ? L.w : 0), 8), stageW - L.w - 8);
+      L.cy = Math.min(Math.max(sy + L.off[1] * k - L.h / 2, 8), bottom - L.h);
+      live.push(L);
+    }
+    // keep tags from sitting on each other: work down the screen, pushing each one clear of those above it
+    live.sort((m, n) => m.cy - n.cy);
+    for (let i = 1; i < live.length; i++) {
+      const L = live[i];
+      for (let pass = 0; pass < 4; pass++) {
+        let moved = false;
+        for (let j = 0; j < i; j++) {
+          const U = live[j];
+          if (L.cx < U.cx + U.w + 6 && U.cx < L.cx + L.w + 6 && L.cy < U.cy + U.h + 6 && U.cy < L.cy + L.h + 6) {
+            L.cy = U.cy + U.h + 6; moved = true;
+          }
+        }
+        if (!moved) break;
+      }
+      if (L.cy > bottom - L.h) L.cy = bottom - L.h;
+    }
+    for (const L of live) {
+      const ax = Math.min(Math.max(L.sx, L.cx), L.cx + L.w), ay = Math.min(Math.max(L.sy, L.cy), L.cy + L.h);
+      L.line.style.width = Math.hypot(ax - L.sx, ay - L.sy) + 'px';
+      L.line.style.transform = 'translate(' + L.sx + 'px,' + L.sy + 'px) rotate(' + Math.atan2(ay - L.sy, ax - L.sx) + 'rad)';
+      L.dot.style.transform = 'translate(' + (L.sx - 5) + 'px,' + (L.sy - 5) + 'px)';
+      L.chip.style.transform = 'translate(' + Math.round(L.cx) + 'px,' + Math.round(L.cy) + 'px)';
+      L.el.style.opacity = L.o;
+      if (!L.shown) { L.shown = true; L.el.style.visibility = 'visible'; }
+    }
+  }
+
   const STEPS = [
-    { until: 0.215, at: 0, name: 'Approach', labels: 'Exterior walls · Roof equipment · Windows · Door openings' },
-    { until: 0.320, at: 0.255, name: 'Entry', labels: 'Door openings' },
-    { until: 0.460, at: 0.43, name: 'Interior wall', labels: 'Wall construction · Foundation connection' },
-    { until: 0.560, at: 0.545, name: 'Above the ceiling', labels: 'Roof structure · Roof-to-wall connection' },
-    { until: 0.820, at: 0.775, name: 'Roof assembly', labels: 'Roof deck · Insulation · Membrane · Parapet · Roof equipment' },
-    { until: 0.925, at: 0.912, name: 'Electrical panel', labels: 'Panel location' },
-    { until: 1.001, at: 0.962, name: 'Thermal scan', labels: 'Surface temperature of breakers' },
+    { until: 0.215, at: 0, name: 'Approach' },
+    { until: 0.320, at: 0.255, name: 'Entry' },
+    { until: 0.470, at: 0.46, name: 'Interior wall' },
+    { until: 0.560, at: 0.545, name: 'Above the ceiling' },
+    { until: 0.820, at: 0.782, name: 'Roof assembly' },
+    { until: 0.925, at: 0.912, name: 'Electrical panel' },
+    { until: 1.001, at: 0.962, name: 'Thermal scan' },
   ];
 
   /* ---------- everything as a function of progress ---------- */
@@ -500,7 +753,7 @@ function init(root) {
     lift(rtus, 4.42, 6.6, p, 0.555, 0.62);
     lift(membrane, 4.40, 5.4, p, 0.56, 0.625);
     lift(insul, 4.28, 4.2, p, 0.565, 0.63);
-    lift(deck, 4.14, 3.0, p, 0.57, 0.64);
+    lift(deck, DECK_Y, 3.0, p, 0.57, 0.64);
 
     panelDoor.rotation.y = -ease(seg(p, 0.875, 0.905)) * (174 * Math.PI / 180);
     const th = ease(seg(p, 0.925, 0.958));
@@ -508,6 +761,7 @@ function init(root) {
     thermal.visible = th > 0.01;
 
     placeCamera(p);
+    placeLabels(p);
 
     if (blackout) blackout.style.opacity = ease(seg(p, 0.972, 0.998));
     if (intro) intro.style.opacity = 1 - seg(p, 0.012, 0.05);
@@ -518,7 +772,6 @@ function init(root) {
       lastStep = si;
       if (hudNum) hudNum.textContent = String(si + 1).padStart(2, '0') + ' / ' + String(STEPS.length).padStart(2, '0');
       if (hudName) hudName.textContent = STEPS[si].name;
-      if (hudLabels) hudLabels.textContent = 'Labels planned here: ' + STEPS[si].labels;
     }
   }
 
@@ -543,6 +796,7 @@ function init(root) {
     const need = 2 * Math.atan(Math.tan((48 * Math.PI / 180) / 2) / camera.aspect) * 180 / Math.PI;
     camera.fov = Math.min(75, Math.max(50, need));
     camera.updateProjectionMatrix();
+    measureLabels();
     const tanHalfH = Math.tan(camera.fov * Math.PI / 360) * camera.aspect;
     buildCurves(Math.min(2.4, Math.max(1, Math.tan(39 * Math.PI / 180) / tanHalfH)));
     needsRender = true;
