@@ -42,15 +42,49 @@ function init(root) {
   scene.fog = new THREE.Fog(BLACK, 55, 130);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 300);
 
-  scene.add(new THREE.HemisphereLight(0xe6eef7, 0x5d6772, 1.15)); // ground colour lights ceilings and deck undersides
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+  scene.add(new THREE.HemisphereLight(0xe6eef7, 0x5d6772, 1.0)); // ground colour lights ceilings and deck undersides
+  const sun = new THREE.DirectionalLight(0xffffff, 1.7);
   sun.position.set(12, 20, 16);
   scene.add(sun);
+  // the sun casts shadows; smaller map on phones
+  const small = Math.min(window.innerWidth, window.innerHeight) < 600;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
+  Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, near: 2, far: 70 });
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.04;
+  // interior lighting, since the roof now shades the inside from the sun
+  for (const [x, y, z, i] of [[-2.6, 2.6, 8.2, 4], [2.6, 2.6, 8.2, 4], [-2.6, 2.6, 4.0, 4], [2.6, 2.6, 4.0, 4], [0, 2.6, -3.5, 5], [0, 2.6, -8.0, 4]]) {
+    const l = new THREE.PointLight(0xfff4e2, i, 11, 1.6);
+    l.position.set(x, y, z);
+    scene.add(l);
+  }
+  // a simple sky for metal and glass to reflect: dark horizon, pale overhead, one bright patch for the sun
+  const envMap = (() => {
+    const es = new THREE.Scene();
+    const geo = new THREE.SphereGeometry(50, 32, 16), pos = geo.attributes.position, col = [];
+    for (let i = 0; i < pos.count; i++) {
+      const t = clamp01(pos.getY(i) / 50 * 0.5 + 0.5), v = 0.03 + 0.85 * t * t;
+      col.push(v * 0.86, v * 0.93, v);
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    es.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+    const patch = new THREE.Mesh(new THREE.SphereGeometry(6, 16, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    patch.position.set(12, 20, 16).setLength(40);
+    es.add(patch);
+    const pm = new THREE.PMREMGenerator(renderer), tex = pm.fromScene(es, 0.02).texture;
+    pm.dispose();
+    return tex;
+  })();
   const fill = new THREE.DirectionalLight(0xcfe0f2, 0.45);
   fill.position.set(-10, 8, -12);
   scene.add(fill);
 
   const lam = (color, extra) => new THREE.MeshLambertMaterial(Object.assign({ color }, extra));
+  const std = (color, roughness, metalness, extra) =>
+    new THREE.MeshStandardMaterial(Object.assign({ color, roughness, metalness, envMap, envMapIntensity: 0.9 }, extra));
 
   // Small repeating textures drawn in code. Each covers a stated real-world size so coursing is to scale.
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
@@ -121,12 +155,13 @@ function init(root) {
   const M = {
     veneer: lam(0xffffff, { map: T.brick }), cmu: lam(0xffffff, { map: T.cmu }), drywall: lam(0xeef1f4),
     slab: lam(0xffffff, { map: T.slab }), walk: lam(0xffffff, { map: T.walk }), floor: lam(0xffffff, { map: T.floor }),
-    pit: lam(0x14181c), footing: lam(0x8b949c), steel: lam(0x7d8fa3), deck: lam(0x93a1b0),
-    insul: lam(0xffffff, { map: T.insul }), membrane: lam(0xffffff, { map: T.membrane }), rtu: lam(0xb9c2ca),
-    ceiling: lam(0xffffff, { map: T.ceiling }), counter: lam(0x3d464d), panel: lam(0x6a7580), breaker: lam(0x1b2026),
-    coping: lam(0xc5ced6), door: lam(0x39424a), ground: lam(0x0f1317), frame: lam(0x1c2228), metal: lam(0xaeb8c1),
-    accent: lam(0x7fb2e0), table: lam(0x59636d),
-    glass: lam(0x3b79b4, { transparent: true, opacity: 0.32 }),
+    pit: lam(0x14181c), footing: lam(0x8b949c), steel: std(0x8fa1b5, 0.5, 0.75), deck: std(0xa3b1bf, 0.42, 0.8),
+    insul: lam(0xffffff, { map: T.insul }), membrane: lam(0xffffff, { map: T.membrane }), rtu: std(0xc3ccd4, 0.5, 0.6),
+    ceiling: lam(0xffffff, { map: T.ceiling }), counter: lam(0x3d464d), panel: std(0x76818c, 0.55, 0.6), breaker: lam(0x1b2026),
+    coping: std(0xcfd7de, 0.4, 0.7), door: lam(0x39424a), ground: lam(0x0f1317), frame: std(0x232a31, 0.35, 0.8),
+    metal: std(0xbac4cd, 0.3, 0.85), accent: std(0x7fb2e0, 0.45, 0.5), table: lam(0x59636d),
+    glass: std(0x4a86bf, 0.04, 0.2, { transparent: true, opacity: 0.36, envMapIntensity: 1.6 }),
+    light: new THREE.MeshBasicMaterial({ color: 0xfff6e6 }),
   };
   const TILE = new Map([[M.veneer, [0.4, 0.2]], [M.cmu, [0.4, 0.4]], [M.slab, [3, 3]], [M.walk, [1.5, 1.5]], [M.floor, [0.6, 0.6]],
     [M.insul, [2.4, 2.4]], [M.membrane, [3, 3]], [M.ceiling, [0.6, 0.6]]]);
@@ -365,6 +400,12 @@ function init(root) {
       const z = z0 + d * (i + 0.5);
       const mesh = box(11.4, 0.02, d - 0.03, 0, 2.9, z, M.ceiling, { fade: true, name: 'ceiling' });
       strips.push({ mesh, dist: Math.abs(z - 5.25) });
+    }
+    // recessed light fixtures, carried by the ceiling strip they sit in
+    for (const [x, z] of [[-2.6, 8.2], [2.6, 8.2], [-2.6, 4.0], [2.6, 4.0], [-2.4, -3.5], [2.4, -3.5], [0, -8.0]]) {
+      const host = strips[Math.min(n - 1, Math.floor((z - z0) / d))];
+      const f = box(1.2, 0.012, 0.6, x, -0.012, z - host.mesh.position.z, M.light, { fade: true, edges: false, collide: false, parent: host.mesh, name: 'light fixture' });
+      (host.lights = host.lights || []).push(f);
     }
     strips.slice().sort((a, b) => a.dist - b.dist).forEach((s, rank) => { s.delay = (rank / (n - 1)) * 0.6; });
   }
@@ -634,6 +675,13 @@ function init(root) {
     camera.lookAt(_look);
   }
 
+  // everything solid casts and receives the sun's shadow; glass and glowing surfaces do not
+  scene.traverse((o) => {
+    if (!o.isMesh || o.material.isMeshBasicMaterial) return;
+    o.receiveShadow = true;
+    o.castShadow = o.material !== M.glass;
+  });
+
   /* ---------- data labels, pinned to the component they describe ----------
      at: point in the world (functions follow moving parts). on: progress window. off: where the tag sits from its dot, px. */
   let labelP = 0;
@@ -764,6 +812,7 @@ function init(root) {
       const t = seg(cq, s.delay, s.delay + 0.4);
       s.mesh.position.y = 2.9 - 0.7 * t * t;
       setOpacity(s.mesh, 1 - ease(t));
+      if (s.lights) for (const f of s.lights) setOpacity(f, 1 - ease(t));
     }
 
     lift(rtus, 4.42, 6.6, p, 0.555, 0.62);
