@@ -107,6 +107,11 @@ function init(root) {
       g.fillStyle = '#2d353c'; g.fillRect(0, 0, w, h);
       g.strokeStyle = '#20262c'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
     }),
+    // 0.6 m floor tile with grout lines
+    floor: tile(128, 128, (g, w, h) => {
+      g.fillStyle = '#8f9aa4'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#5c6670'; g.lineWidth = 4; g.strokeRect(0, 0, w, h);
+    }),
     // 1.5 m sidewalk panels
     walk: tile(128, 128, (g, w, h) => {
       g.fillStyle = '#3f4952'; g.fillRect(0, 0, w, h);
@@ -115,7 +120,7 @@ function init(root) {
   };
   const M = {
     veneer: lam(0xffffff, { map: T.brick }), cmu: lam(0xffffff, { map: T.cmu }), drywall: lam(0xeef1f4),
-    slab: lam(0xffffff, { map: T.slab }), walk: lam(0xffffff, { map: T.walk }),
+    slab: lam(0xffffff, { map: T.slab }), walk: lam(0xffffff, { map: T.walk }), floor: lam(0xffffff, { map: T.floor }),
     pit: lam(0x14181c), footing: lam(0x8b949c), steel: lam(0x7d8fa3), deck: lam(0x93a1b0),
     insul: lam(0xffffff, { map: T.insul }), membrane: lam(0xffffff, { map: T.membrane }), rtu: lam(0xb9c2ca),
     ceiling: lam(0xffffff, { map: T.ceiling }), counter: lam(0x3d464d), panel: lam(0x6a7580), breaker: lam(0x1b2026),
@@ -123,7 +128,7 @@ function init(root) {
     accent: lam(0x7fb2e0), table: lam(0x59636d),
     glass: lam(0x3b79b4, { transparent: true, opacity: 0.32 }),
   };
-  const TILE = new Map([[M.veneer, [0.4, 0.2]], [M.cmu, [0.4, 0.4]], [M.slab, [3, 3]], [M.walk, [1.5, 1.5]],
+  const TILE = new Map([[M.veneer, [0.4, 0.2]], [M.cmu, [0.4, 0.4]], [M.slab, [3, 3]], [M.walk, [1.5, 1.5]], [M.floor, [0.6, 0.6]],
     [M.insul, [2.4, 2.4]], [M.membrane, [3, 3]], [M.ceiling, [0.6, 0.6]]]);
 
   // Map a box's texture by where it sits in the world, so coursing runs unbroken from one piece to the next.
@@ -289,6 +294,12 @@ function init(root) {
   box(1.0, 0.15, CUT.z0 + 10.7, -5.2, -0.075, (CUT.z0 - 10.7) / 2, M.slab, { name: 'slab' });
   box(1.0, 0.15, 10.7 - CUT.z1, -5.2, -0.075, (CUT.z1 + 10.7) / 2, M.slab, { name: 'slab' });
   const cutCover = box(1.0, 0.15, CUT.z1 - CUT.z0, -5.2, -0.075, (CUT.z0 + CUT.z1) / 2, M.slab, { fade: true, name: 'slab cutaway cover', collide: false });
+  // floor tile, front of house only
+  const FT = { edges: false, collide: false, name: 'floor tile' };
+  box(10.4, 0.012, 9.14, 0.5, 0.006, 6.13, M.floor, FT);
+  box(1.0, 0.012, CUT.z0 - 1.56, -5.2, 0.006, (CUT.z0 + 1.56) / 2, M.floor, FT);
+  box(1.0, 0.012, 10.7 - CUT.z1, -5.2, 0.006, (CUT.z1 + 10.7) / 2, M.floor, FT);
+  const tileCover = box(1.0, 0.012, CUT.z1 - CUT.z0, -5.2, 0.006, (CUT.z0 + CUT.z1) / 2, M.floor, Object.assign({ fade: true }, FT));
   {
     const zc = (CUT.z0 + CUT.z1) / 2, zl = CUT.z1 - CUT.z0;
     box(1.0, 0.04, zl, -5.2, -0.97, zc, M.pit, { edges: false, name: 'pit' });
@@ -625,11 +636,14 @@ function init(root) {
 
   /* ---------- data labels, pinned to the component they describe ----------
      at: point in the world (functions follow moving parts). on: progress window. off: where the tag sits from its dot, px. */
+  let labelP = 0;
   const LABELS = [
     { tag: 'COPE',   field: 'Exterior walls',   value: 'Brick veneer, CMU',        at: () => [2.6, 3.8, 11.02],                on: [0.045, 0.165], off: [-40, -78] },
     { tag: 'NatCat', field: 'Roof equipment',   value: 'RTU, curb-mounted',        at: () => [1.6, rtus.position.y + 1.6, 6.6], on: [0.055, 0.130], off: [60, -64] },
     { tag: 'NatCat', field: 'Windows',          value: 'Storefront glazing',       at: () => [2.9, 1.7, 11.0],                 on: [0.065, 0.200], off: [70, 60] },
     { tag: 'NatCat', field: 'Door openings',    value: 'Glass entry',              at: () => [-2.5, 2.25, 11.0],               on: [0.075, 0.236], off: [-60, 54] },
+    { tag: 'COPE',   field: 'Interior wall',    value: 'Drywall',                  at: () => [-5.64, 1.9, 2.6 + 3.4 * ease(seg(labelP, 0.29, 0.335))], on: [0.250, 0.352], off: [80, -60] },
+    { tag: 'COPE',   field: 'Floor surface',    value: 'Tile',                     at: () => [-3.2, 0.02, 3.6],                on: [0.256, 0.326], off: [80, 40] },
     { tag: 'COPE',   field: 'Wall construction', value: 'CMU, ISO 4',              at: () => [-5.7, 2.05, 5.2],                on: [0.398, 0.476], off: [80, -70] },
     { tag: 'NatCat', field: 'Foundation',       value: 'Anchor bolts',             at: () => [-5.64, 0.22, 5.4],               on: [0.440, 0.488], off: [90, 30] },
     { tag: 'COPE',   field: 'Roof framing',     value: 'Steel bar joists',         at: () => [-3.6, 3.63, 4.5],                on: [0.515, 0.600], off: [90, 50] },
@@ -664,6 +678,7 @@ function init(root) {
   function placeLabels(p) {
     const k = stageW < 600 ? 0.6 : 1, reserve = stageW < 600 ? 128 : 118, bottom = stageH - reserve, live = [];
     camera.updateMatrixWorld(true);
+    labelP = p;
     for (const L of LABELS) {
       let o = Math.min(seg(p, L.on[0], L.on[0] + 0.012), 1 - seg(p, L.on[1] - 0.012, L.on[1])), sx = 0, sy = 0;
       if (o > 0) {
@@ -713,7 +728,7 @@ function init(root) {
 
   const STEPS = [
     { until: 0.215, at: 0, name: 'Approach' },
-    { until: 0.320, at: 0.255, name: 'Entry' },
+    { until: 0.320, at: 0.280, name: 'Entry' },
     { until: 0.470, at: 0.46, name: 'Interior wall' },
     { until: 0.560, at: 0.545, name: 'Above the ceiling' },
     { until: 0.820, at: 0.782, name: 'Roof assembly' },
@@ -741,6 +756,8 @@ function init(root) {
     const f = ease(seg(p, 0.405, 0.455));
     cutCover.position.y = -0.075 - 0.3 * f;
     setOpacity(cutCover, 1 - f);
+    tileCover.position.y = 0.006 - 0.3 * f;
+    setOpacity(tileCover, 1 - f);
     for (const b of bolts) { b.material.opacity = f; b.visible = f > 0.01; }
 
     const cq = seg(p, 0.47, 0.535);
