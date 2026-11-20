@@ -102,11 +102,11 @@ function init(root) {
   const T = {
     // 0.4 m x 0.2 m: two bricks by three courses, running bond
     brick: tile(256, 128, (g, w, h) => {
-      g.fillStyle = '#343c44'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#a39b8f'; g.fillRect(0, 0, w, h);       // mortar
       const ch = h / 3, bl = w / 2, j = 4;
       for (let r = 0; r < 3; r++) for (let c = -1; c < 3; c++) {
-        const v = 78 + Math.round(rnd(r * 7 + c + 3) * 18);
-        g.fillStyle = 'rgb(' + v + ',' + (v + 12) + ',' + (v + 23) + ')';
+        const k = rnd(r * 7 + c + 3);                         // brick-to-brick variation
+        g.fillStyle = 'rgb(' + Math.round(132 + k * 30) + ',' + Math.round(62 + k * 16) + ',' + Math.round(48 + k * 12) + ')';
         g.fillRect(c * bl + (r % 2) * bl / 2 + j / 2, r * ch + j / 2, bl - j, ch - j);
       }
     }),
