@@ -37,6 +37,14 @@ favicon.ico, favicon-32.png, apple-touch-icon.png   browser and home-screen icon
 - `image/` holds only files a page actually links to. Unreferenced assets are deleted rather than left in place.
 - The contact form posts through EmailJS from the browser. The key in `contact.html` is a publishable key and is public by design.
 
+## Walkthrough test page
+
+`walkthrough-test.html` is an unlisted, noindex test page for a scroll-driven 3D building walkthrough. It is not in the nav or the sitemap.
+
+- `js/walkthrough.js` holds the scene, the camera keyframes and every animation, all driven by one scroll-progress number.
+- `css/walkthrough.css` holds the sticky stage and the on-screen step readout.
+- `js/vendor/three.module.min.js` is three.js r170 (MIT), vendored so the page has no third-party runtime dependency.
+
 ## Adding a page
 
 1. Create `<name>.html`, copying the nav and footer from an existing page.
